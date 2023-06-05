@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>CSS Template</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<style>
+		* {
+			box-sizing: border-box;
+		}
+		
+		body {
+			font-family: sans-serif;
+			background-image: url("file:///Users/akin/Desktop/FP1%20project/FP1_Project_using_Docker/static/images/background_image.jpg");
+			background-size: cover;
+			text-align: center;
+			background-position: center;
+		}
+
+		.container {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			height: 100vh;
+		}
+
+		/* Style the footer */
+		button {
+			padding: 20px 60px;
+			background-color: Silver;
+			color: Black;
+			text-align: center;
+			font-size: 12px;
+			font-weight: bold;
+			border: 2px;
+			border-radius: 12px;
+		}
+		button:hover,
+		button:active {
+			background-color: #f3ecec;
+			border-color: #f3ecec;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h2>Foundational Project</h2>
+		<h3>Sentiment Analysis of Stocks</h3>
+		<form action="/" method="post">
+			<div class="form-control">
+				<label>Company Name</label>
+				<br></br>
+				<select name="company_name" id="company_name" required>
+					{% for column_name in column_names %}
+					<option value="{{ column_name }}">{{ column_name }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div>
+				<br><button>Submit</button></br>
+			</div>
+		</form>
+		<h3>Result: {{response}}</h3>
+		
+	</div>
+</body>
+</html>

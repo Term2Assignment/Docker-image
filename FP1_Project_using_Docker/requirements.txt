@@ -1,0 +1,6 @@
+Flask
+pandas
+nltk
+beautifulsoup4
+joblib
+newspaper3k
