@@ -11,7 +11,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the app.py file to the container
-COPY app.py .
+COPY . .
 
 # Expose the port on which the app will run (change the port number if needed)
 EXPOSE 5000
