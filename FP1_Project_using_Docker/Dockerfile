@@ -1,6 +1,12 @@
 # Use the official Python base image
 FROM python:3.9
 
+# Create the directory for NLTK data
+RUN mkdir -p /root/nltk_data
+
+# Copy the support Vander lexicon file to the directory
+COPY nltk_data/vader_lexicon.zip /root/nltk_data/sentiment/
+
 # Set the working directory inside the container
 WORKDIR /app
 
