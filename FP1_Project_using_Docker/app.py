@@ -9,13 +9,15 @@ import re
 import time
 import pickle, joblib
 import nltk
+from tpot import TPOTClassifier
 from nltk.sentiment import SentimentIntensityAnalyzer
 from datetime import datetime, timedelta
 from newspaper import Article
+from sklearn.preprocessing import MinMaxScaler
 
 def remove_special_characters(text):
     # Remove special characters and punctuation using regular expressions
-    cleaned_text = re.sub(r'[^\w\s]', '', text)
+    cleaned_text = re.sub(r'[^\d\s.-]', '', text)
     return cleaned_text
 
 def convert_relative_time(relative_time):
@@ -71,14 +73,8 @@ def get_company_news(url):
             
             sia = SentimentIntensityAnalyzer()
             # Apply sentiment analysis to each news headline
-            sentiment_score_negative = sia.polarity_scores(NewsArticle)['neg']
-            sentiment_score_neutral = sia.polarity_scores(NewsArticle)['neu']
-            sentiment_score_positive = sia.polarity_scores(NewsArticle)['pos']
             sentiment_score_compound = sia.polarity_scores(NewsArticle)['compound']
             print("Sentiment Score of News:", sentiment_score_compound)
-            # Classify the sentiment as 'Positive', 'Negative', or 'Neutral' based on the sentiment score
-            sentiment = 'Positive' if sentiment_score_compound > 0 else ('Negative' if sentiment_score_compound < 0 else 'Neutral')
-            print("Sentiment of News:",sentiment)
             if(NewsDate > pd.Timestamp.now() - pd.Timedelta(days=2)):
                 sentiment_score.append(sentiment_score_compound)
         
@@ -88,15 +84,13 @@ def get_company_news(url):
 def calculate_average_sentiment(sentiment_scores):
     if not sentiment_scores:
         # Return a default sentiment value or handle the empty case as needed
-        return 1
+        return 0
     # Calculate the average sentiment score
     avg_sentiment_score = statistics.mean(sentiment_scores)
     print("Average Sentiment Score:", avg_sentiment_score)
-    # Classify the avg sentiment as 'Positive'as 2, 'Negative'as 0, or 'Neutral'as 1 based on the sentiment score
-    avg_sentiment = 2 if avg_sentiment_score > 0 else (0 if avg_sentiment_score < 0 else 1)
-    print("Average Sentiment :", avg_sentiment)
-    # Return the average sentiment
-    return avg_sentiment
+
+    # Return the average sentiment score whose value are from -1(negative) to +1(positive)
+    return avg_sentiment_score
 
 def get_header_agent():
     # Prepare the header agent
@@ -110,6 +104,33 @@ def get_header_agent():
        'Connection': 'keep-alive'}
     # Return the header agent
     return header_agent
+# Function to assign sentiment labels based on keywords
+def assign_sentiment_label(text):
+    lowercase_text = text.lower()
+    if 'high' in lowercase_text:
+        return 2
+    elif 'avg' in lowercase_text:
+        return 1
+    else:
+        return 0
+
+def redflag_valuation_sentiment_label(text):
+    lowercase_text = text.lower()
+    if 'high' in lowercase_text:
+        return 0
+    elif 'avg' in lowercase_text:
+        return 1
+    else:
+        return 2
+
+def entrypoint_sentiment_label(text):
+    lowercase_text = text.lower()
+    if 'bad' in lowercase_text:
+        return 0
+    elif 'good' in lowercase_text:
+        return 2
+    else:
+        return 1
 
 def get_company_data(url_val_overview,url_val_finance, header_agent, avg_sentiment):
     # Retrieve and parse the company overview page
@@ -191,6 +212,12 @@ def get_company_data(url_val_overview,url_val_finance, header_agent, avg_sentime
             print(sc_Profitability)
             print(sc_Entrypoint)
             print(sc_Redflags)  
+            sc_Entrypoint_sentiment = entrypoint_sentiment_label(sc_Entrypoint)
+            sc_Growth_sentiment = assign_sentiment_label(sc_Growth)
+            sc_Profitability_sentiment = assign_sentiment_label(sc_Profitability)
+            sc_Redflags_sentiment = redflag_valuation_sentiment_label(sc_Redflags)
+            sc_Performance_sentiment = assign_sentiment_label(sc_Performance)
+            sc_Valuation_sentiment = redflag_valuation_sentiment_label(sc_Valuation)
         try:
             IncomeStatement= comp_fin_soup.find('div',attrs ={'class':'jsx-2537935686 commentary-items'}).text
         except:
@@ -218,87 +245,87 @@ def get_company_data(url_val_overview,url_val_finance, header_agent, avg_sentime
                     if(i2019 != -1):
                         TotalRevenue2019=columns[i2019].text
                     else:
-                        TotalRevenue2019="NAN" 
+                        TotalRevenue2019=0 
                     if(i2020 != -1):
                         TotalRevenue2020=columns[i2020].text
                     else:
-                        TotalRevenue2020="NAN" 
+                        TotalRevenue2020=0 
                     if(i2021 != -1):
                         TotalRevenue2021=columns[i2021].text
                     else:
-                        TotalRevenue2021="NAN" 
+                        TotalRevenue2021=0 
                     if(i2022 != -1):
                         TotalRevenue2022=columns[i2022].text
                     else:
-                        TotalRevenue2022="NAN" 
+                        TotalRevenue2022=0 
                 elif(columns[0].text == "EBITDA"):
                     if(i2019 != -1):
                         EBITDA2019=columns[i2019].text
                     else:
-                        EBITDA2019="NAN"
+                        EBITDA2019=0
                     if(i2020 != -1):
                         EBITDA2020=columns[i2020].text
                     else:
-                        EBITDA2020="NAN"
+                        EBITDA2020=0
                     if(i2021 != -1):
                         EBITDA2021=columns[i2021].text
                     else:
-                        EBITDA2021="NAN"
+                        EBITDA2021=0
                     if(i2022 != -1):
                         EBITDA2022=columns[i2022].text
                     else:
-                        EBITDA2022="NAN"
+                        EBITDA2022=0
                 elif(columns[0].text == "Net Income"):
                     if(i2019 != -1):
                         NetIncome2019=columns[i2019].text
                     else:
-                        NetIncome2019="NAN"
+                        NetIncome2019=0
                     if(i2020 != -1):
                         NetIncome2020=columns[i2020].text
                     else:
-                        NetIncome2020="NAN"
+                        NetIncome2020=0
                     if(i2021 != -1):
                         NetIncome2021=columns[i2021].text
                     else:
-                        NetIncome2021="NAN"
+                        NetIncome2021=0
                     if(i2022 != -1):
                         NetIncome2022=columns[i2022].text
                     else:
-                        NetIncome2022="NAN"
+                        NetIncome2022=0
                 elif(columns[0].text == "PBT"):
                     if(i2019 != -1):
                         PBT2019=columns[i2019].text
                     else:
-                        PBT2019="NAN"
+                        PBT2019=0
                     if(i2020 != -1):
                         PBT2020=columns[i2020].text
                     else:
-                        PBT2020="NAN"
+                        PBT2020=0
                     if(i2021 != -1):
                         PBT2021=columns[i2021].text
                     else:
-                        PBT2021="NAN"
+                        PBT2021=0
                     if(i2022 != -1):
                         PBT2022=columns[i2022].text
                     else:
-                        PBT2022="NAN"
+                        PBT2022=0
         except:
-            TotalRevenue2019="NAN"
-            TotalRevenue2020="NAN"
-            TotalRevenue2021="NAN"
-            TotalRevenue2022="NAN"
-            EBITDA2019="NAN"
-            EBITDA2020="NAN"
-            EBITDA2021="NAN"
-            EBITDA2022="NAN"
-            NetIncome2019="NAN"
-            NeIncome2020="NAN"
-            NetIncome2021="NAN"
-            NetIncome2022="NAN"
-            PBT2019="NAN"
-            PBT2020="NAN"
-            PBT2021="NAN"
-            PBT2022="NAN"
+            TotalRevenue2019=0
+            TotalRevenue2020=0
+            TotalRevenue2021=0
+            TotalRevenue2022=0
+            EBITDA2019=0
+            EBITDA2020=0
+            EBITDA2021=0
+            EBITDA2022=0
+            NetIncome2019=0
+            NeIncome2020=0
+            NetIncome2021=0
+            NetIncome2022=0
+            PBT2019=0
+            PBT2020=0
+            PBT2021=0
+            PBT2022=0
         print(TotalRevenue2019)
         print(TotalRevenue2020)
         print(TotalRevenue2021)
@@ -315,35 +342,50 @@ def get_company_data(url_val_overview,url_val_finance, header_agent, avg_sentime
         print(PBT2020)
         print(PBT2021)
         print(PBT2022)
-        flagdata = {
-            '2019 Total Revenue' : TotalRevenue2019,
-            '2020 Total Revenue' : TotalRevenue2020,
-            '2021 Total Revenue' : TotalRevenue2021,
-            '2022 Total Revenue' : TotalRevenue2022,
-            '2019 EBITDA' : EBITDA2019,
-            '2020 EBITDA' : EBITDA2020,
-            '2021 EBITDA' : EBITDA2021,
-            '2022 EBITDA' : EBITDA2022,
-            '2019 Net Income' : NetIncome2019,
-            '2020 Net Income' : NetIncome2020,
-            '2021 Net Income' : NetIncome2021,
-            '2022 Net Income' : NetIncome2022,
-            '2019 PBT' : PBT2019,
-            '2020 PBT' : PBT2020,
-            '2021 PBT' : PBT2021,
-            '2022 PBT' : PBT2022,
-            'PE Ratio' : PERatio,
-            'Sentiment_Category':avg_sentiment
-        }
-        # Convert the dictionary to a DataFrame
-        flagdf = pd.DataFrame(flagdata, index=[0])
+        
+        
+
+    flagdata = {
+        '2019 Total Revenue' : TotalRevenue2019,
+        '2019 EBITDA' : EBITDA2019,
+        '2019 Net Income' : NetIncome2019,
+        '2019 PBT' : PBT2019,
+        '2020 Total Revenue' : TotalRevenue2020,
+        '2020 EBITDA' : EBITDA2020,
+        '2020 Net Income' : NetIncome2020,
+        '2020 PBT' : PBT2020,
+        '2021 Total Revenue' : TotalRevenue2021,
+        '2021 EBITDA' : EBITDA2021,
+        '2021 Net Income' : NetIncome2021,
+        '2021 PBT' : PBT2021,
+        '2022 Total Revenue' : TotalRevenue2022,
+        '2022 EBITDA' : EBITDA2022,
+        '2022 Net Income' : NetIncome2022,
+        '2022 PBT' : PBT2022,
+        'PE Ratio' : PERatio,
+        'Entry_point_Sentiment' : sc_Entrypoint_sentiment,
+        'Growth_Sentiment' : sc_Growth_sentiment,
+        'Profitability_Sentiment' : sc_Profitability_sentiment,
+        'RedFlag_Sentiment' : sc_Redflags_sentiment,
+        'Performance_Sentiment' : sc_Performance_sentiment,
+        'Valuation_Sentiment' : sc_Valuation_sentiment,
+        'News Sentiment Score': avg_sentiment,
+        'Final_Sentiment':'1'
+    }
+    # Convert the dictionary to a DataFrame
+    flagdf = pd.DataFrame(flagdata, index=[0])
+        
+       
     # Return the company Full data in Dataframe
     return flagdf
 
 def process_data(flagdf):
     # Process the data and create the flagdf DataFrame
+    print(flagdf.T)
+    #flagdf = flagdf.fillna(0)
+
     # ...
-    print(flagdf)
+    print("-------remove special---------")
     flagdf['2019 Total Revenue']= flagdf['2019 Total Revenue'].apply(remove_special_characters)
     flagdf['2019 EBITDA']= flagdf['2019 EBITDA'].apply(remove_special_characters)
     flagdf['2019 Net Income']= flagdf['2019 Net Income'].apply(remove_special_characters)
@@ -361,13 +403,36 @@ def process_data(flagdf):
     flagdf['2022 Net Income']= flagdf['2022 Net Income'].apply(remove_special_characters)
     flagdf['2022 PBT']= flagdf['2022 PBT'].apply(remove_special_characters)
     flagdf['PE Ratio']= flagdf['PE Ratio'].apply(remove_special_characters)
+    print(flagdf.T)
+    print("-------After remove special---------")
+    X_values = pd.read_csv('X_values.csv')
+    X_values.columns = ['News Sentiment Score','2019 Total Revenue','2019 EBITDA','2019 Net Income','2019 PBT',
+                        '2020 Total Revenue','2020 EBITDA','2020 Net Income','2020 PBT',
+                        '2021 Total Revenue','2021 EBITDA','2021 Net Income','2021 PBT',
+                        '2022 Total Revenue','2022 EBITDA','2022 Net Income','2022 PBT','PE Ratio']
+    print(X_values)
+    scaler = MinMaxScaler(feature_range=(0, 2))
     
-    flagdf = flagdf.replace("NAN", 0)
-    flagdf = flagdf.fillna(0)
+    # scaler.fit(X_values)
+    scaler.fit(X_values)
+    print("datamax",scaler.data_max_)
+    print("datamin",scaler.data_min_)
+    columns_to_scale = ['News Sentiment Score','2019 Total Revenue','2019 EBITDA','2019 Net Income','2019 PBT',
+                        '2020 Total Revenue','2020 EBITDA','2020 Net Income','2020 PBT',
+                        '2021 Total Revenue','2021 EBITDA','2021 Net Income','2021 PBT',
+                        '2022 Total Revenue','2022 EBITDA','2022 Net Income','2022 PBT','PE Ratio']
 
+    scaled_values = scaler.transform(flagdf[columns_to_scale])
+    scaled_df = pd.DataFrame(scaled_values, columns=columns_to_scale)
+    flagdf[columns_to_scale] = scaled_df[columns_to_scale]
+
+    print("--------After minmax scaler------")
+    print(flagdf.T)
     model = joblib.load(open('Sentiment_Analysis_Flag_Data.pkl', 'rb'))
-    predictions = pd.DataFrame(model.predict(flagdf), columns = ['diagnosis'])
+    predictions = pd.DataFrame(model.predict(flagdf), columns = ['prediction'])
+    
     final = pd.concat([predictions, flagdf], axis = 1)
+    print("--------After Prediction scaler------")
     print(final)
     # Return the final DataFrame
     return final
@@ -399,40 +464,19 @@ def submit():
         url_val_overview=url_val + "?checklist=basic&chartScope=1d"
         flagdf = get_company_data(url_val_overview, url_val_finance, header_agent, avg_sentiment)
         final = process_data(flagdf)
-        #in diagnosis 0 is fairly Negative , 1 as fairly positive,2 as negative and ,3 as positive
-        # Sentiment_Category values are 'Positive'as 2, 'Negative'as 0, or 'Neutral'as 1 based on the sentiment score
-        if final['diagnosis'].iloc[0] == 0:
-            if final['Sentiment_Category'].iloc[0] == 2:
-                response = "The sentiment is fairly Positive."
-            elif final['Sentiment_Category'].iloc[0] == 1:
-                response = "The sentiment is fairly Negative."
-            else:
-                response = "The sentiment is Negative."    
-        elif final['diagnosis'].iloc[0] == 1:
-            if final['Sentiment_Category'].iloc[0] == 2:
-                response = "The sentiment is Positive."
-            elif final['Sentiment_Category'].iloc[0] == 1:
-                response = "The sentiment is fairly positive."
-            else:
-                response = "The sentiment is fairly Negative."  
-        elif final['diagnosis'].iloc[0] == 2:
-            if final['Sentiment_Category'].iloc[0] == 2:
-                response = "The sentiment is Neutral."
-            elif final['Sentiment_Category'].iloc[0] == 1:
-                response = "The sentiment is Negative."
-            else:
-                response = "The sentiment is Negative."
+            #in diagnosis 0 is fairly Negative , 1 as fairly positive, as negative and ,3 as positive
+            # Sentiment_Category values are 'Positive'as 2, 'Negative'as 0, or 'Neutral'as 1 based on the sentiment score
+        if final['prediction'].iloc[0] == 0:
+            response = "The sentiment is Negative."   
+        elif final['prediction'].iloc[0] == 1:
+            response = "The sentiment is Neutral."  
         else:
-            if final['Sentiment_Category'].iloc[0] == 2:
-                response = "The sentiment is Positive."
-            elif final['Sentiment_Category'].iloc[0] == 1:
-                response = "The sentiment is failrly Positive."
-            else:
-                response = "The sentiment is Neutral."
+            response = "The sentiment is Positive."
+
     else:
         response = "Select a Company"
 
     return render_template('frontend.html', response=response,column_names=column_values)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run()

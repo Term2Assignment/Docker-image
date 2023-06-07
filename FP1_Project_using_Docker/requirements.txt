@@ -4,4 +4,5 @@ nltk
 beautifulsoup4
 joblib
 newspaper3k
+tpot
 scikit-learn
