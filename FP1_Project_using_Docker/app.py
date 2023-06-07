@@ -479,4 +479,4 @@ def submit():
     return render_template('frontend.html', response=response,column_names=column_values)
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0', port=5000)
