@@ -75,7 +75,7 @@ def get_company_news(url):
             # Apply sentiment analysis to each news headline
             sentiment_score_compound = sia.polarity_scores(NewsArticle)['compound']
             print("Sentiment Score of News:", sentiment_score_compound)
-            if(NewsDate > pd.Timestamp.now() - pd.Timedelta(days=2)):
+            if(NewsDate > pd.Timestamp.now() - pd.Timedelta(days=7)):
                 sentiment_score.append(sentiment_score_compound)
         
     # Return the company news content
@@ -445,7 +445,7 @@ df = pd.read_csv('companyListURL.tsv', delimiter='\t', encoding='utf-8')
 @app.route('/')
 def index():
     column_values = df['Company Name'].tolist()
-    return render_template('frontend.html', response="Select a Company",column_names=column_values)
+    return render_template('frontend.html', response="",column_names=column_values)
 @app.route('/', methods=['POST'])
 def submit():
     column_values = df['Company Name'].tolist()
@@ -467,11 +467,15 @@ def submit():
             #in diagnosis 0 is fairly Negative , 1 as fairly positive, as negative and ,3 as positive
             # Sentiment_Category values are 'Positive'as 2, 'Negative'as 0, or 'Neutral'as 1 based on the sentiment score
         if final['prediction'].iloc[0] == 0:
-            response = "The sentiment is Negative."   
+            response = "The sentiment is Negative for " + company_name   
         elif final['prediction'].iloc[0] == 1:
-            response = "The sentiment is Neutral."  
+            response = "The sentiment is Moderately Negative for " + company_name 
+        elif final['prediction'].iloc[0] == 2:
+            response = "The sentiment is Neutral for " + company_name 
+        elif final['prediction'].iloc[0] == 3:
+            response = "The sentiment is Moderately Positive for " + company_name          
         else:
-            response = "The sentiment is Positive."
+            response = "The sentiment is Positive for " + company_name 
 
     else:
         response = "Select a Company"
