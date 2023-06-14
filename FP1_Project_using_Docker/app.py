@@ -218,6 +218,26 @@ def get_company_data(url_val_overview,url_val_finance, header_agent, avg_sentime
             sc_Redflags_sentiment = redflag_valuation_sentiment_label(sc_Redflags)
             sc_Performance_sentiment = assign_sentiment_label(sc_Performance)
             sc_Valuation_sentiment = redflag_valuation_sentiment_label(sc_Valuation)
+        else:
+            tickerdf = pd.read_csv('companyList.tsv', delimiter='\t', encoding='utf-8')
+            sc_Performance = tickerdf.loc[tickerdf['Company Name'] == CompanyName, 'sc Performance'].values[0]
+            sc_Valuation = tickerdf.loc[tickerdf['Company Name'] == CompanyName, 'sc Valuation'].values[0]
+            sc_Growth = tickerdf.loc[tickerdf['Company Name'] == CompanyName, 'sc Growth'].values[0]
+            sc_Profitability = tickerdf.loc[tickerdf['Company Name'] == CompanyName, 'sc Profitability'].values[0]
+            sc_Entrypoint = tickerdf.loc[tickerdf['Company Name'] == CompanyName, 'sc Entry Point'].values[0]
+            sc_Redflags  = tickerdf.loc[tickerdf['Company Name'] == CompanyName, 'sc Red Flags'].values[0]
+            print(sc_Performance)
+            print(sc_Valuation)
+            print(sc_Growth)
+            print(sc_Profitability)
+            print(sc_Entrypoint)
+            print(sc_Redflags)  
+            sc_Entrypoint_sentiment = entrypoint_sentiment_label(sc_Entrypoint)
+            sc_Growth_sentiment = assign_sentiment_label(sc_Growth)
+            sc_Profitability_sentiment = assign_sentiment_label(sc_Profitability)
+            sc_Redflags_sentiment = redflag_valuation_sentiment_label(sc_Redflags)
+            sc_Performance_sentiment = assign_sentiment_label(sc_Performance)
+            sc_Valuation_sentiment = redflag_valuation_sentiment_label(sc_Valuation)
         try:
             IncomeStatement= comp_fin_soup.find('div',attrs ={'class':'jsx-2537935686 commentary-items'}).text
         except:
@@ -370,7 +390,7 @@ def get_company_data(url_val_overview,url_val_finance, header_agent, avg_sentime
         'Performance_Sentiment' : sc_Performance_sentiment,
         'Valuation_Sentiment' : sc_Valuation_sentiment,
         'News Sentiment Score': avg_sentiment,
-        'Final_Sentiment':'1'
+        'Final_Sentiment':'2'
     }
     # Convert the dictionary to a DataFrame
     flagdf = pd.DataFrame(flagdata, index=[0])
