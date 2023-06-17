@@ -1,3 +1,5 @@
+#pip Install all the required Library using pip install command
+#Importing the necessary packages
 from flask import Flask, render_template, request
 import pandas as pd
 import statistics
@@ -15,11 +17,16 @@ from datetime import datetime, timedelta
 from newspaper import Article
 from sklearn.preprocessing import MinMaxScaler
 
+#Input : Scrapped data from various sources
+#Working : Removing the special characters and punctuation using regular expressions
+#Output : Clean data without special characters and punctuation
 def remove_special_characters(text):
-    # Remove special characters and punctuation using regular expressions
     cleaned_text = re.sub(r'[^\d\s.-]', '', text)
     return cleaned_text
 
+#Input : Is the Data time associated with the scrapped newspaper article
+#Working : Using regular expression it will match the pattern and convert text like 6 Days Ago to the respective date and time of the article
+#Output : Returns relative time of the article 
 def convert_relative_time(relative_time):
     pattern = r'(\d+)\s+(\w+)\s+ago'
     match = re.search(pattern, relative_time)
@@ -34,9 +41,18 @@ def convert_relative_time(relative_time):
             return timedelta(minutes=count)
     return timedelta()
 
+#Input : Passing the URL of a particular company whose sentiment analysis we are trying to do
+#Working : a. URL of a particular company is passed and then we are scrapping all the news with latest tag on it 
+#          b. Calling the function to convert_relative_time  
+#          c. For every  NewsURL we are passing it through the Article class of Newspaper library
+#          d. Then we are downloading, parsing and calling nlp method on every news article
+#          e. Applying SentimentIntensityAnalyzer on every News article from Vader Lexicon library and finding compound sentiment analysis
+#          f. Ranging -1 to 1 so -1 : Negative +1 : Positive and 0 : Neutral
+#          g. For finding the compound sentiment we are taking into consideration last 7 days news.
+#Output : Compound sentiment intensity score list on the all the news of the company with last 7 days news.
 def get_company_news(url):
     # Retrieve and parse the company news page
-    # ...
+ 
     company_news_page = requests.get(url)
     if company_news_page.status_code == 200:
         print("Success : Requested ticker tape news page is loaded successfully ")
@@ -81,6 +97,9 @@ def get_company_news(url):
     # Return the company news content
     return sentiment_score
 
+#Input : List of Compound Sentiment score of News
+#Working : Finding the mean on all the news which is passed into it
+#Output : Average sentiment of News within 7 Days for a company
 def calculate_average_sentiment(sentiment_scores):
     if not sentiment_scores:
         # Return a default sentiment value or handle the empty case as needed
@@ -92,6 +111,7 @@ def calculate_average_sentiment(sentiment_scores):
     # Return the average sentiment score whose value are from -1(negative) to +1(positive)
     return avg_sentiment_score
 
+#Creating a header agent for scrapping the data
 def get_header_agent():
     # Prepare the header agent
     # ...
@@ -104,7 +124,11 @@ def get_header_agent():
        'Connection': 'keep-alive'}
     # Return the header agent
     return header_agent
-# Function to assign sentiment labels based on keywords
+
+#Function to assign sentiment labels based on keywords
+#Input : Text Scrapped from the website containing scorecard 
+#Working : Categorising data on the basis of flags
+#Output : Quatified Values of the Score Card parameters
 def assign_sentiment_label(text):
     lowercase_text = text.lower()
     if 'high' in lowercase_text:
@@ -113,7 +137,10 @@ def assign_sentiment_label(text):
         return 1
     else:
         return 0
-
+    
+#Input : Text Scrapped from the website containing scorecard 
+#Working : Categorising data on the basis of flags
+#Output : Quatified Values of the Score Card parameters
 def redflag_valuation_sentiment_label(text):
     lowercase_text = text.lower()
     if 'high' in lowercase_text:
@@ -122,7 +149,10 @@ def redflag_valuation_sentiment_label(text):
         return 1
     else:
         return 2
-
+    
+#Input : Text Scrapped from the website containing scorecard 
+#Working : Categorising data on the basis of flags
+#Output : Quatified Values of the Score Card parameters
 def entrypoint_sentiment_label(text):
     lowercase_text = text.lower()
     if 'bad' in lowercase_text:
@@ -132,6 +162,12 @@ def entrypoint_sentiment_label(text):
     else:
         return 1
 
+#Input : This is for scarpping the performace financial data of the selected company main URL, financial URL, header agent and avg sentiment of the company
+#Working :  Loading the Overview page uding the requests.get function and using package Beautifulsoup for scraping the webpage
+#           Fetching the company Name,Company Full Name, PE Ratio from it.
+#           Loading thee Financial Page of ticker tape and fetching the score Card and the last 4 year data from it and setting the default values as 0
+#           Creating a dataframe using this data
+#Output : Dataframe which contains all the financial data out of ticker tape website
 def get_company_data(url_val_overview,url_val_finance, header_agent, avg_sentiment):
     # Retrieve and parse the company overview page
     # ...
@@ -399,13 +435,19 @@ def get_company_data(url_val_overview,url_val_finance, header_agent, avg_sentime
     # Return the company Full data in Dataframe
     return flagdf
 
+#Input : , Dataframe created using scaping the tciker tape page also the Avg New sentiment
+#Working :  Calling Remove special character function to remove special character
+#           loading the preprocessing X_values file for fitting the min max scaler
+#           Set the scale from 0 to 2 for in max scaler to keep all the values in same range 
+#           loading the pkl file created using the mmodel and predicting the over all sentiment of the company             
+#Output :   Dataframe with all the values as well as the prediction value
 def process_data(flagdf):
     # Process the data and create the flagdf DataFrame
     print(flagdf.T)
     #flagdf = flagdf.fillna(0)
 
     # ...
-    print("-------remove special---------")
+
     flagdf['2019 Total Revenue']= flagdf['2019 Total Revenue'].apply(remove_special_characters)
     flagdf['2019 EBITDA']= flagdf['2019 EBITDA'].apply(remove_special_characters)
     flagdf['2019 Net Income']= flagdf['2019 Net Income'].apply(remove_special_characters)
@@ -423,20 +465,14 @@ def process_data(flagdf):
     flagdf['2022 Net Income']= flagdf['2022 Net Income'].apply(remove_special_characters)
     flagdf['2022 PBT']= flagdf['2022 PBT'].apply(remove_special_characters)
     flagdf['PE Ratio']= flagdf['PE Ratio'].apply(remove_special_characters)
-    print(flagdf.T)
-    print("-------After remove special---------")
+
     X_values = pd.read_csv('X_values.csv')
     X_values.columns = ['News Sentiment Score','2019 Total Revenue','2019 EBITDA','2019 Net Income','2019 PBT',
                         '2020 Total Revenue','2020 EBITDA','2020 Net Income','2020 PBT',
                         '2021 Total Revenue','2021 EBITDA','2021 Net Income','2021 PBT',
                         '2022 Total Revenue','2022 EBITDA','2022 Net Income','2022 PBT','PE Ratio']
-    print(X_values)
     scaler = MinMaxScaler(feature_range=(0, 2))
-    
-    # scaler.fit(X_values)
     scaler.fit(X_values)
-    print("datamax",scaler.data_max_)
-    print("datamin",scaler.data_min_)
     columns_to_scale = ['News Sentiment Score','2019 Total Revenue','2019 EBITDA','2019 Net Income','2019 PBT',
                         '2020 Total Revenue','2020 EBITDA','2020 Net Income','2020 PBT',
                         '2021 Total Revenue','2021 EBITDA','2021 Net Income','2021 PBT',
@@ -445,27 +481,31 @@ def process_data(flagdf):
     scaled_values = scaler.transform(flagdf[columns_to_scale])
     scaled_df = pd.DataFrame(scaled_values, columns=columns_to_scale)
     flagdf[columns_to_scale] = scaled_df[columns_to_scale]
-
-    print("--------After minmax scaler------")
-    print(flagdf.T)
     model = joblib.load(open('Sentiment_Analysis_Flag_Data.pkl', 'rb'))
     predictions = pd.DataFrame(model.predict(flagdf), columns = ['prediction'])
     
     final = pd.concat([predictions, flagdf], axis = 1)
     print("--------After Prediction scaler------")
-    print(final)
+    print(final.T)
     # Return the final DataFrame
     return final
 
 app = Flask(__name__, static_folder='static')
 
-# Load the DataFrame once outside the route functions
+# Load the DataFrame from the csv file which contains the company name as well there respective URL
 df = pd.read_csv('companyListURL.tsv', delimiter='\t', encoding='utf-8')
 
+# rendering the frontpage with the company Names loaded using the .csv file
 @app.route('/')
 def index():
     column_values = df['Company Name'].tolist()
     return render_template('frontend.html', response="",column_names=column_values)
+
+
+#Input : 
+#Working :  Model and predicting the over all sentiment of the company             
+#Output :   Dataframe with all the values as well as the prediction value
+
 @app.route('/', methods=['POST'])
 def submit():
     column_values = df['Company Name'].tolist()
